@@ -1,0 +1,2608 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+
+    <!--
+        Адаптивное отображение на телефонах и планшетах.
+    -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Калькулятор семейного бюджета</title>
+
+    <style>
+        /* =========================================================
+           1. ОСНОВНЫЕ НАСТРОЙКИ
+           ========================================================= */
+
+        :root {
+            --background: #f3f6fb;
+            --card: #ffffff;
+            --text: #1f2937;
+            --muted: #6b7280;
+            --border: #e5e7eb;
+
+            --primary: #4f46e5;
+            --primary-hover: #4338ca;
+
+            --income: #16a34a;
+            --income-light: #dcfce7;
+
+            --expense: #dc2626;
+            --expense-light: #fee2e2;
+
+            --balance: #2563eb;
+            --balance-light: #dbeafe;
+
+            --warning: #f59e0b;
+
+            --shadow: 0 12px 30px rgba(15, 23, 42, 0.08);
+            --radius: 18px;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            font-family:
+                Inter,
+                -apple-system,
+                BlinkMacSystemFont,
+                "Segoe UI",
+                Roboto,
+                Arial,
+                sans-serif;
+            color: var(--text);
+            background:
+                radial-gradient(
+                    circle at top left,
+                    rgba(79, 70, 229, 0.12),
+                    transparent 34%
+                ),
+                var(--background);
+        }
+
+        button,
+        input,
+        select {
+            font: inherit;
+        }
+
+        button {
+            cursor: pointer;
+        }
+
+        .container {
+            width: min(1180px, calc(100% - 32px));
+            margin: 0 auto;
+            padding: 32px 0 50px;
+        }
+
+        /* =========================================================
+           2. ШАПКА
+           ========================================================= */
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 24px;
+            margin-bottom: 24px;
+        }
+
+        .header__title {
+            margin: 0 0 8px;
+            font-size: clamp(28px, 5vw, 44px);
+            line-height: 1.1;
+        }
+
+        .header__subtitle {
+            margin: 0;
+            color: var(--muted);
+            font-size: 16px;
+            line-height: 1.6;
+        }
+
+        .header__settings {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 12px;
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            box-shadow: var(--shadow);
+            white-space: nowrap;
+        }
+
+        .header__settings label {
+            color: var(--muted);
+            font-size: 14px;
+        }
+
+        /* =========================================================
+           3. КАРТОЧКИ С ИТОГАМИ
+           ========================================================= */
+
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 18px;
+            margin-bottom: 24px;
+        }
+
+        .summary-card {
+            position: relative;
+            overflow: hidden;
+            padding: 24px;
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+        }
+
+        .summary-card::after {
+            content: "";
+            position: absolute;
+            width: 130px;
+            height: 130px;
+            right: -45px;
+            bottom: -65px;
+            border-radius: 50%;
+            opacity: 0.16;
+        }
+
+        .summary-card--income::after {
+            background: var(--income);
+        }
+
+        .summary-card--expense::after {
+            background: var(--expense);
+        }
+
+        .summary-card--balance::after {
+            background: var(--balance);
+        }
+
+        .summary-card__label {
+            display: block;
+            margin-bottom: 10px;
+            color: var(--muted);
+            font-size: 14px;
+        }
+
+        .summary-card__value {
+            position: relative;
+            z-index: 1;
+            display: block;
+            font-size: clamp(25px, 4vw, 34px);
+            font-weight: 800;
+            word-break: break-word;
+        }
+
+        .summary-card--income .summary-card__value {
+            color: var(--income);
+        }
+
+        .summary-card--expense .summary-card__value {
+            color: var(--expense);
+        }
+
+        .summary-card--balance .summary-card__value {
+            color: var(--balance);
+        }
+
+        .summary-card__hint {
+            position: relative;
+            z-index: 1;
+            display: block;
+            margin-top: 10px;
+            color: var(--muted);
+            font-size: 13px;
+        }
+
+        /* =========================================================
+           4. ОБЩИЕ КАРТОЧКИ
+           ========================================================= */
+
+        .card {
+            padding: 24px;
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+        }
+
+        .card__header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 16px;
+            margin-bottom: 20px;
+        }
+
+        .card__title {
+            margin: 0;
+            font-size: 21px;
+        }
+
+        .card__description {
+            margin: 5px 0 0;
+            color: var(--muted);
+            font-size: 14px;
+        }
+
+        .main-grid {
+            display: grid;
+            grid-template-columns: minmax(0, 1.05fr) minmax(340px, 0.95fr);
+            gap: 24px;
+            margin-bottom: 24px;
+        }
+
+        /* =========================================================
+           5. ФОРМА
+           ========================================================= */
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 16px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 7px;
+        }
+
+        .form-group--full {
+            grid-column: 1 / -1;
+        }
+
+        .form-label {
+            font-size: 14px;
+            font-weight: 700;
+        }
+
+        .form-control {
+            width: 100%;
+            min-height: 46px;
+            padding: 11px 13px;
+            color: var(--text);
+            background: #ffffff;
+            border: 1px solid var(--border);
+            border-radius: 11px;
+            outline: none;
+            transition:
+                border-color 0.2s,
+                box-shadow 0.2s;
+        }
+
+        .form-control:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.12);
+        }
+
+        .form-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        /* =========================================================
+           6. КНОПКИ
+           ========================================================= */
+
+        .button {
+            min-height: 43px;
+            padding: 10px 16px;
+            border: 0;
+            border-radius: 11px;
+            font-weight: 700;
+            transition:
+                transform 0.15s,
+                background 0.2s,
+                opacity 0.2s;
+        }
+
+        .button:hover {
+            transform: translateY(-1px);
+        }
+
+        .button:active {
+            transform: translateY(0);
+        }
+
+        .button--primary {
+            color: #ffffff;
+            background: var(--primary);
+        }
+
+        .button--primary:hover {
+            background: var(--primary-hover);
+        }
+
+        .button--secondary {
+            color: var(--text);
+            background: #eef2ff;
+        }
+
+        .button--danger {
+            color: #ffffff;
+            background: var(--expense);
+        }
+
+        .button--ghost {
+            color: var(--muted);
+            background: transparent;
+            border: 1px solid var(--border);
+        }
+
+        .icon-button {
+            display: inline-flex;
+            justify-content: center;
+            align-items: center;
+            width: 36px;
+            height: 36px;
+            padding: 0;
+            color: var(--muted);
+            background: transparent;
+            border: 1px solid var(--border);
+            border-radius: 9px;
+            transition:
+                color 0.2s,
+                border-color 0.2s,
+                background 0.2s;
+        }
+
+        .icon-button:hover {
+            color: var(--primary);
+            border-color: var(--primary);
+            background: #eef2ff;
+        }
+
+        .icon-button--delete:hover {
+            color: var(--expense);
+            border-color: var(--expense);
+            background: var(--expense-light);
+        }
+
+        /* =========================================================
+           7. ДИАГРАММА
+           ========================================================= */
+
+        .chart-container {
+            display: grid;
+            grid-template-columns: 220px minmax(0, 1fr);
+            align-items: center;
+            gap: 22px;
+            min-height: 290px;
+        }
+
+        .chart-wrapper {
+            position: relative;
+            width: 220px;
+            height: 220px;
+            margin: 0 auto;
+        }
+
+        #budgetChart {
+            width: 220px;
+            height: 220px;
+        }
+
+        .chart-center {
+            position: absolute;
+            inset: 50%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            width: 105px;
+            height: 105px;
+            padding: 8px;
+            background: var(--card);
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            box-shadow: 0 6px 20px rgba(15, 23, 42, 0.08);
+            pointer-events: none;
+        }
+
+        .chart-center__label {
+            color: var(--muted);
+            font-size: 11px;
+        }
+
+        .chart-center__value {
+            max-width: 90px;
+            margin-top: 4px;
+            font-size: 14px;
+            font-weight: 800;
+            word-break: break-word;
+        }
+
+        .legend {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            max-height: 255px;
+            overflow-y: auto;
+            padding-right: 5px;
+        }
+
+        .legend__item {
+            display: grid;
+            grid-template-columns: 13px minmax(0, 1fr) auto;
+            align-items: center;
+            gap: 9px;
+            font-size: 13px;
+        }
+
+        .legend__color {
+            width: 13px;
+            height: 13px;
+            border-radius: 4px;
+        }
+
+        .legend__name {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .legend__value {
+            font-weight: 700;
+            white-space: nowrap;
+        }
+
+        .chart-empty {
+            grid-column: 1 / -1;
+            padding: 40px 20px;
+            color: var(--muted);
+            text-align: center;
+        }
+
+        /* =========================================================
+           8. ПРОГРЕСС И НОРМА СБЕРЕЖЕНИЙ
+           ========================================================= */
+
+        .progress-section {
+            margin-bottom: 24px;
+        }
+
+        .progress-info {
+            display: flex;
+            justify-content: space-between;
+            gap: 12px;
+            margin-bottom: 10px;
+            font-size: 14px;
+        }
+
+        .progress {
+            height: 14px;
+            overflow: hidden;
+            background: #e5e7eb;
+            border-radius: 999px;
+        }
+
+        .progress__bar {
+            width: 0;
+            height: 100%;
+            background: linear-gradient(90deg, var(--primary), #818cf8);
+            border-radius: inherit;
+            transition: width 0.4s ease;
+        }
+
+        .progress-message {
+            margin: 10px 0 0;
+            color: var(--muted);
+            font-size: 13px;
+            line-height: 1.5;
+        }
+
+        /* =========================================================
+           9. ФИЛЬТРЫ И ТАБЛИЦА
+           ========================================================= */
+
+        .filters {
+            display: grid;
+            grid-template-columns: minmax(180px, 1fr) repeat(3, minmax(140px, auto));
+            gap: 12px;
+            margin-bottom: 18px;
+        }
+
+        .table-wrapper {
+            overflow-x: auto;
+            border: 1px solid var(--border);
+            border-radius: 14px;
+        }
+
+        table {
+            width: 100%;
+            min-width: 780px;
+            border-collapse: collapse;
+        }
+
+        th,
+        td {
+            padding: 14px 15px;
+            border-bottom: 1px solid var(--border);
+            text-align: left;
+            vertical-align: middle;
+        }
+
+        th {
+            color: var(--muted);
+            background: #f8fafc;
+            font-size: 12px;
+            letter-spacing: 0.03em;
+            text-transform: uppercase;
+        }
+
+        td {
+            font-size: 14px;
+        }
+
+        tbody tr:last-child td {
+            border-bottom: 0;
+        }
+
+        tbody tr:hover {
+            background: #fafafa;
+        }
+
+        .transaction-type {
+            display: inline-flex;
+            align-items: center;
+            min-height: 28px;
+            padding: 5px 9px;
+            border-radius: 999px;
+            font-size: 12px;
+            font-weight: 800;
+        }
+
+        .transaction-type--income {
+            color: var(--income);
+            background: var(--income-light);
+        }
+
+        .transaction-type--expense {
+            color: var(--expense);
+            background: var(--expense-light);
+        }
+
+        .amount {
+            font-weight: 800;
+            white-space: nowrap;
+        }
+
+        .amount--income {
+            color: var(--income);
+        }
+
+        .amount--expense {
+            color: var(--expense);
+        }
+
+        .actions {
+            display: flex;
+            gap: 7px;
+        }
+
+        .empty-state {
+            padding: 40px 20px !important;
+            color: var(--muted);
+            text-align: center;
+        }
+
+        /* =========================================================
+           10. УВЕДОМЛЕНИЕ
+           ========================================================= */
+
+        .notification {
+            position: fixed;
+            z-index: 1000;
+            right: 20px;
+            bottom: 20px;
+            max-width: min(390px, calc(100% - 40px));
+            padding: 14px 18px;
+            color: #ffffff;
+            background: #111827;
+            border-radius: 12px;
+            box-shadow: 0 15px 40px rgba(15, 23, 42, 0.25);
+            transform: translateY(130%);
+            opacity: 0;
+            transition:
+                transform 0.3s,
+                opacity 0.3s;
+        }
+
+        .notification--visible {
+            transform: translateY(0);
+            opacity: 1;
+        }
+
+        .notification--error {
+            background: var(--expense);
+        }
+
+        /* =========================================================
+           11. ПОДВАЛ
+           ========================================================= */
+
+        .footer {
+            margin-top: 24px;
+            color: var(--muted);
+            font-size: 13px;
+            line-height: 1.6;
+            text-align: center;
+        }
+
+        /* =========================================================
+           12. АДАПТИВНАЯ ВЕРСИЯ
+           ========================================================= */
+
+        @media (max-width: 960px) {
+            .main-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .filters {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+            }
+        }
+
+        @media (max-width: 760px) {
+            .container {
+                width: min(100% - 22px, 1180px);
+                padding-top: 20px;
+            }
+
+            .header {
+                flex-direction: column;
+            }
+
+            .header__settings {
+                width: 100%;
+                justify-content: space-between;
+            }
+
+            .summary-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .form-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .form-group--full {
+                grid-column: auto;
+            }
+
+            .chart-container {
+                grid-template-columns: 1fr;
+            }
+
+            .legend {
+                max-height: none;
+            }
+
+            .filters {
+                grid-template-columns: 1fr;
+            }
+
+            .card {
+                padding: 18px;
+            }
+
+            .card__header {
+                align-items: flex-start;
+                flex-direction: column;
+            }
+
+            .form-actions .button {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <main class="container">
+
+        <!-- =======================================================
+             ШАПКА ПРИЛОЖЕНИЯ
+             ======================================================= -->
+        <header class="header">
+            <div>
+                <h1 class="header__title">Семейный бюджет</h1>
+
+                <p class="header__subtitle">
+                    Добавляйте доходы и расходы, анализируйте категории
+                    и контролируйте семейные финансы.
+                </p>
+            </div>
+
+            <div class="header__settings">
+                <label for="currency">Валюта:</label>
+
+                <select id="currency" class="form-control">
+                    <option value="RUB">₽ Рубли</option>
+                    <option value="EUR">€ Евро</option>
+                    <option value="USD">$ Доллары</option>
+                    <option value="KZT">₸ Тенге</option>
+                    <option value="BYN">Br Белорусские рубли</option>
+                </select>
+            </div>
+        </header>
+
+        <!-- =======================================================
+             ИТОГОВЫЕ ПОКАЗАТЕЛИ
+             ======================================================= -->
+        <section class="summary-grid">
+            <article class="summary-card summary-card--income">
+                <span class="summary-card__label">Общий доход</span>
+
+                <strong
+                    id="totalIncome"
+                    class="summary-card__value"
+                >
+                    0 ₽
+                </strong>
+
+                <span class="summary-card__hint">
+                    Все поступления за выбранный период
+                </span>
+            </article>
+
+            <article class="summary-card summary-card--expense">
+                <span class="summary-card__label">Общие расходы</span>
+
+                <strong
+                    id="totalExpense"
+                    class="summary-card__value"
+                >
+                    0 ₽
+                </strong>
+
+                <span class="summary-card__hint">
+                    Все траты за выбранный период
+                </span>
+            </article>
+
+            <article class="summary-card summary-card--balance">
+                <span class="summary-card__label">Текущий баланс</span>
+
+                <strong
+                    id="totalBalance"
+                    class="summary-card__value"
+                >
+                    0 ₽
+                </strong>
+
+                <span
+                    id="balanceHint"
+                    class="summary-card__hint"
+                >
+                    Доходы минус расходы
+                </span>
+            </article>
+        </section>
+
+        <!-- =======================================================
+             ОСНОВНАЯ ЧАСТЬ
+             ======================================================= -->
+        <section class="main-grid">
+
+            <!-- Форма добавления операции -->
+            <article class="card">
+                <div class="card__header">
+                    <div>
+                        <h2 id="formTitle" class="card__title">
+                            Добавить операцию
+                        </h2>
+
+                        <p class="card__description">
+                            Заполните информацию о доходе или расходе.
+                        </p>
+                    </div>
+                </div>
+
+                <form id="transactionForm">
+                    <div class="form-grid">
+
+                        <div class="form-group">
+                            <label class="form-label" for="type">
+                                Тип операции
+                            </label>
+
+                            <select id="type" class="form-control" required>
+                                <option value="expense">Расход</option>
+                                <option value="income">Доход</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label" for="amount">
+                                Сумма
+                            </label>
+
+                            <input
+                                id="amount"
+                                class="form-control"
+                                type="number"
+                                min="0.01"
+                                step="0.01"
+                                placeholder="Например: 5000"
+                                required
+                            >
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label" for="category">
+                                Категория
+                            </label>
+
+                            <select
+                                id="category"
+                                class="form-control"
+                                required
+                            ></select>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label" for="date">
+                                Дата
+                            </label>
+
+                            <input
+                                id="date"
+                                class="form-control"
+                                type="date"
+                                required
+                            >
+                        </div>
+
+                        <div class="form-group form-group--full">
+                            <label class="form-label" for="description">
+                                Описание
+                            </label>
+
+                            <input
+                                id="description"
+                                class="form-control"
+                                type="text"
+                                maxlength="80"
+                                placeholder="Например: продукты на неделю"
+                            >
+                        </div>
+                    </div>
+
+                    <div class="form-actions">
+                        <button
+                            id="submitButton"
+                            class="button button--primary"
+                            type="submit"
+                        >
+                            Добавить операцию
+                        </button>
+
+                        <button
+                            id="cancelEditButton"
+                            class="button button--ghost"
+                            type="button"
+                            hidden
+                        >
+                            Отменить редактирование
+                        </button>
+
+                        <button
+                            id="addDemoButton"
+                            class="button button--secondary"
+                            type="button"
+                        >
+                            Добавить пример
+                        </button>
+                    </div>
+                </form>
+            </article>
+
+            <!-- Диаграмма расходов -->
+            <article class="card">
+                <div class="card__header">
+                    <div>
+                        <h2 class="card__title">Структура расходов</h2>
+
+                        <p class="card__description">
+                            Распределение расходов по категориям.
+                        </p>
+                    </div>
+                </div>
+
+                <div id="chartContainer" class="chart-container">
+                    <div class="chart-wrapper">
+                        <canvas
+                            id="budgetChart"
+                            width="440"
+                            height="440"
+                            aria-label="Диаграмма расходов"
+                        ></canvas>
+
+                        <div class="chart-center">
+                            <span class="chart-center__label">
+                                Расходы
+                            </span>
+
+                            <strong
+                                id="chartTotal"
+                                class="chart-center__value"
+                            >
+                                0 ₽
+                            </strong>
+                        </div>
+                    </div>
+
+                    <div id="chartLegend" class="legend"></div>
+                </div>
+            </article>
+        </section>
+
+        <!-- =======================================================
+             ПОКАЗАТЕЛЬ СБЕРЕЖЕНИЙ
+             ======================================================= -->
+        <section class="card progress-section">
+            <div class="card__header">
+                <div>
+                    <h2 class="card__title">Норма сбережений</h2>
+
+                    <p class="card__description">
+                        Какая часть доходов осталась после всех расходов.
+                    </p>
+                </div>
+            </div>
+
+            <div class="progress-info">
+                <span>Сохранено от дохода</span>
+                <strong id="savingRate">0%</strong>
+            </div>
+
+            <div
+                class="progress"
+                role="progressbar"
+                aria-valuemin="0"
+                aria-valuemax="100"
+            >
+                <div id="savingProgress" class="progress__bar"></div>
+            </div>
+
+            <p id="savingMessage" class="progress-message">
+                Добавьте доходы и расходы, чтобы увидеть норму сбережений.
+            </p>
+        </section>
+
+        <!-- =======================================================
+             СПИСОК ОПЕРАЦИЙ
+             ======================================================= -->
+        <section class="card">
+            <div class="card__header">
+                <div>
+                    <h2 class="card__title">История операций</h2>
+
+                    <p class="card__description">
+                        Используйте поиск и фильтры для анализа бюджета.
+                    </p>
+                </div>
+
+                <div class="form-actions">
+                    <button
+                        id="exportButton"
+                        class="button button--secondary"
+                        type="button"
+                    >
+                        Экспорт CSV
+                    </button>
+
+                    <button
+                        id="clearButton"
+                        class="button button--danger"
+                        type="button"
+                    >
+                        Очистить всё
+                    </button>
+                </div>
+            </div>
+
+            <!-- Панель фильтров -->
+            <div class="filters">
+                <input
+                    id="searchInput"
+                    class="form-control"
+                    type="search"
+                    placeholder="Поиск по описанию..."
+                >
+
+                <select id="filterType" class="form-control">
+                    <option value="all">Все операции</option>
+                    <option value="income">Только доходы</option>
+                    <option value="expense">Только расходы</option>
+                </select>
+
+                <select id="filterCategory" class="form-control">
+                    <option value="all">Все категории</option>
+                </select>
+
+                <input
+                    id="filterMonth"
+                    class="form-control"
+                    type="month"
+                    title="Фильтр по месяцу"
+                >
+            </div>
+
+            <div class="table-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Дата</th>
+                            <th>Тип</th>
+                            <th>Категория</th>
+                            <th>Описание</th>
+                            <th>Сумма</th>
+                            <th>Действия</th>
+                        </tr>
+                    </thead>
+
+                    <tbody id="transactionTableBody"></tbody>
+                </table>
+            </div>
+        </section>
+
+        <footer class="footer">
+            Данные автоматически сохраняются в памяти браузера.
+            Они остаются на этом устройстве после перезагрузки страницы.
+        </footer>
+    </main>
+
+    <!-- Всплывающее уведомление -->
+    <div
+        id="notification"
+        class="notification"
+        role="status"
+        aria-live="polite"
+    ></div>
+
+    <script>
+        "use strict";
+
+        /* =========================================================
+           КАЛЬКУЛЯТОР СЕМЕЙНОГО БЮДЖЕТА
+           ---------------------------------------------------------
+           Весь JavaScript находится в этом файле.
+
+           Основные возможности:
+           1. Добавление доходов и расходов.
+           2. Редактирование операций.
+           3. Удаление операций.
+           4. Расчёт доходов, расходов и баланса.
+           5. Диаграмма расходов.
+           6. Поиск и фильтрация.
+           7. Сохранение в localStorage.
+           8. Экспорт операций в CSV.
+           ========================================================= */
+
+
+        /* =========================================================
+           1. КАТЕГОРИИ
+           ========================================================= */
+
+        const categories = {
+            income: [
+                "Зарплата",
+                "Аванс",
+                "Премия",
+                "Подработка",
+                "Пособия",
+                "Подарки",
+                "Возврат долга",
+                "Инвестиции",
+                "Другой доход"
+            ],
+
+            expense: [
+                "Продукты",
+                "Жильё",
+                "Коммунальные услуги",
+                "Транспорт",
+                "Автомобиль",
+                "Здоровье",
+                "Одежда",
+                "Дети",
+                "Образование",
+                "Красота",
+                "Развлечения",
+                "Кафе и рестораны",
+                "Кредиты",
+                "Связь и интернет",
+                "Подарки",
+                "Путешествия",
+                "Другой расход"
+            ]
+        };
+
+
+        /* =========================================================
+           2. ЦВЕТА КАТЕГОРИЙ ДЛЯ ДИАГРАММЫ
+           ========================================================= */
+
+        const chartColors = [
+            "#4f46e5",
+            "#16a34a",
+            "#f59e0b",
+            "#dc2626",
+            "#0891b2",
+            "#9333ea",
+            "#ea580c",
+            "#0d9488",
+            "#db2777",
+            "#65a30d",
+            "#2563eb",
+            "#7c3aed",
+            "#d97706",
+            "#059669",
+            "#e11d48",
+            "#64748b",
+            "#0284c7"
+        ];
+
+
+        /* =========================================================
+           3. КЛЮЧИ ДЛЯ СОХРАНЕНИЯ ДАННЫХ
+           ========================================================= */
+
+        const STORAGE_KEY = "familyBudgetTransactions_v1";
+        const CURRENCY_KEY = "familyBudgetCurrency_v1";
+
+
+        /* =========================================================
+           4. СОСТОЯНИЕ ПРИЛОЖЕНИЯ
+           ========================================================= */
+
+        let transactions = loadTransactions();
+
+        /*
+            editingId содержит ID редактируемой операции.
+            Если значение null, создаётся новая операция.
+        */
+        let editingId = null;
+
+
+        /* =========================================================
+           5. ПОЛУЧЕНИЕ HTML-ЭЛЕМЕНТОВ
+           ========================================================= */
+
+        const transactionForm =
+            document.getElementById("transactionForm");
+
+        const typeInput =
+            document.getElementById("type");
+
+        const amountInput =
+            document.getElementById("amount");
+
+        const categoryInput =
+            document.getElementById("category");
+
+        const dateInput =
+            document.getElementById("date");
+
+        const descriptionInput =
+            document.getElementById("description");
+
+        const submitButton =
+            document.getElementById("submitButton");
+
+        const cancelEditButton =
+            document.getElementById("cancelEditButton");
+
+        const addDemoButton =
+            document.getElementById("addDemoButton");
+
+        const formTitle =
+            document.getElementById("formTitle");
+
+        const totalIncomeElement =
+            document.getElementById("totalIncome");
+
+        const totalExpenseElement =
+            document.getElementById("totalExpense");
+
+        const totalBalanceElement =
+            document.getElementById("totalBalance");
+
+        const balanceHintElement =
+            document.getElementById("balanceHint");
+
+        const transactionTableBody =
+            document.getElementById("transactionTableBody");
+
+        const searchInput =
+            document.getElementById("searchInput");
+
+        const filterType =
+            document.getElementById("filterType");
+
+        const filterCategory =
+            document.getElementById("filterCategory");
+
+        const filterMonth =
+            document.getElementById("filterMonth");
+
+        const currencyInput =
+            document.getElementById("currency");
+
+        const exportButton =
+            document.getElementById("exportButton");
+
+        const clearButton =
+            document.getElementById("clearButton");
+
+        const notification =
+            document.getElementById("notification");
+
+        const chartCanvas =
+            document.getElementById("budgetChart");
+
+        const chartLegend =
+            document.getElementById("chartLegend");
+
+        const chartTotal =
+            document.getElementById("chartTotal");
+
+        const savingRateElement =
+            document.getElementById("savingRate");
+
+        const savingProgress =
+            document.getElementById("savingProgress");
+
+        const savingMessage =
+            document.getElementById("savingMessage");
+
+
+        /* =========================================================
+           6. ПЕРВОНАЧАЛЬНАЯ НАСТРОЙКА
+           ========================================================= */
+
+        initializeApplication();
+
+        function initializeApplication() {
+            /*
+                Устанавливаем сохранённую валюту.
+                Если её нет, используем российский рубль.
+            */
+            currencyInput.value =
+                localStorage.getItem(CURRENCY_KEY) || "RUB";
+
+            /*
+                По умолчанию в форме устанавливается сегодняшняя дата.
+            */
+            dateInput.value = getTodayDate();
+
+            /*
+                Заполняем список категорий в зависимости
+                от выбранного типа операции.
+            */
+            fillCategorySelect();
+
+            /*
+                Заполняем категории в фильтре.
+            */
+            fillCategoryFilter();
+
+            /*
+                Отображаем все данные.
+            */
+            renderApplication();
+        }
+
+
+        /* =========================================================
+           7. ОБРАБОТЧИКИ СОБЫТИЙ
+           ========================================================= */
+
+        transactionForm.addEventListener(
+            "submit",
+            handleFormSubmit
+        );
+
+        typeInput.addEventListener(
+            "change",
+            fillCategorySelect
+        );
+
+        cancelEditButton.addEventListener(
+            "click",
+            resetForm
+        );
+
+        addDemoButton.addEventListener(
+            "click",
+            addDemoTransactions
+        );
+
+        searchInput.addEventListener(
+            "input",
+            renderApplication
+        );
+
+        filterType.addEventListener(
+            "change",
+            renderApplication
+        );
+
+        filterCategory.addEventListener(
+            "change",
+            renderApplication
+        );
+
+        filterMonth.addEventListener(
+            "change",
+            renderApplication
+        );
+
+        currencyInput.addEventListener(
+            "change",
+            function () {
+                localStorage.setItem(
+                    CURRENCY_KEY,
+                    currencyInput.value
+                );
+
+                renderApplication();
+
+                showNotification("Валюта изменена.");
+            }
+        );
+
+        exportButton.addEventListener(
+            "click",
+            exportToCSV
+        );
+
+        clearButton.addEventListener(
+            "click",
+            clearAllTransactions
+        );
+
+
+        /* =========================================================
+           8. ДОБАВЛЕНИЕ И РЕДАКТИРОВАНИЕ ОПЕРАЦИИ
+           ========================================================= */
+
+        function handleFormSubmit(event) {
+            /*
+                Запрещаем стандартную отправку формы,
+                чтобы страница не перезагружалась.
+            */
+            event.preventDefault();
+
+            const amount = Number(amountInput.value);
+
+            if (!Number.isFinite(amount) || amount <= 0) {
+                showNotification(
+                    "Введите корректную сумму больше нуля.",
+                    true
+                );
+
+                amountInput.focus();
+                return;
+            }
+
+            if (!dateInput.value) {
+                showNotification(
+                    "Выберите дату операции.",
+                    true
+                );
+
+                dateInput.focus();
+                return;
+            }
+
+            const transactionData = {
+                type: typeInput.value,
+                amount: roundMoney(amount),
+                category: categoryInput.value,
+                date: dateInput.value,
+                description:
+                    descriptionInput.value.trim() ||
+                    "Без описания"
+            };
+
+            if (editingId !== null) {
+                /*
+                    Обновляем существующую операцию.
+                */
+                transactions = transactions.map(
+                    function (transaction) {
+                        if (transaction.id === editingId) {
+                            return {
+                                ...transaction,
+                                ...transactionData
+                            };
+                        }
+
+                        return transaction;
+                    }
+                );
+
+                showNotification("Операция обновлена.");
+            } else {
+                /*
+                    Создаём новую операцию.
+                */
+                const newTransaction = {
+                    id: createUniqueId(),
+                    createdAt: Date.now(),
+                    ...transactionData
+                };
+
+                transactions.push(newTransaction);
+
+                showNotification("Операция добавлена.");
+            }
+
+            saveTransactions();
+            resetForm();
+            fillCategoryFilter();
+            renderApplication();
+        }
+
+
+        /* =========================================================
+           9. РЕДАКТИРОВАНИЕ ОПЕРАЦИИ
+           ========================================================= */
+
+        function startEditingTransaction(id) {
+            const transaction = transactions.find(
+                function (item) {
+                    return item.id === id;
+                }
+            );
+
+            if (!transaction) {
+                showNotification(
+                    "Операция не найдена.",
+                    true
+                );
+                return;
+            }
+
+            editingId = id;
+
+            typeInput.value = transaction.type;
+
+            /*
+                После изменения типа заново формируем категории.
+            */
+            fillCategorySelect();
+
+            categoryInput.value = transaction.category;
+            amountInput.value = transaction.amount;
+            dateInput.value = transaction.date;
+            descriptionInput.value =
+                transaction.description === "Без описания"
+                    ? ""
+                    : transaction.description;
+
+            formTitle.textContent = "Редактирование операции";
+            submitButton.textContent = "Сохранить изменения";
+            cancelEditButton.hidden = false;
+
+            /*
+                Прокручиваем страницу к форме.
+            */
+            transactionForm.scrollIntoView({
+                behavior: "smooth",
+                block: "center"
+            });
+
+            amountInput.focus();
+        }
+
+
+        /* =========================================================
+           10. УДАЛЕНИЕ ОПЕРАЦИИ
+           ========================================================= */
+
+        function deleteTransaction(id) {
+            const transaction = transactions.find(
+                function (item) {
+                    return item.id === id;
+                }
+            );
+
+            if (!transaction) {
+                return;
+            }
+
+            const confirmed = window.confirm(
+                "Удалить операцию «" +
+                transaction.description +
+                "»?"
+            );
+
+            if (!confirmed) {
+                return;
+            }
+
+            transactions = transactions.filter(
+                function (item) {
+                    return item.id !== id;
+                }
+            );
+
+            if (editingId === id) {
+                resetForm();
+            }
+
+            saveTransactions();
+            fillCategoryFilter();
+            renderApplication();
+
+            showNotification("Операция удалена.");
+        }
+
+
+        /* =========================================================
+           11. СБРОС ФОРМЫ
+           ========================================================= */
+
+        function resetForm() {
+            editingId = null;
+
+            transactionForm.reset();
+
+            typeInput.value = "expense";
+            dateInput.value = getTodayDate();
+
+            fillCategorySelect();
+
+            formTitle.textContent = "Добавить операцию";
+            submitButton.textContent = "Добавить операцию";
+            cancelEditButton.hidden = true;
+        }
+
+
+        /* =========================================================
+           12. ЗАПОЛНЕНИЕ КАТЕГОРИЙ
+           ========================================================= */
+
+        function fillCategorySelect() {
+            const selectedType = typeInput.value;
+            const selectedCategories = categories[selectedType];
+
+            categoryInput.innerHTML = "";
+
+            selectedCategories.forEach(function (category) {
+                const option = document.createElement("option");
+
+                option.value = category;
+                option.textContent = category;
+
+                categoryInput.appendChild(option);
+            });
+        }
+
+        function fillCategoryFilter() {
+            const currentValue = filterCategory.value || "all";
+
+            const usedCategories = [
+                ...new Set(
+                    transactions.map(function (transaction) {
+                        return transaction.category;
+                    })
+                )
+            ].sort(function (a, b) {
+                return a.localeCompare(b, "ru");
+            });
+
+            filterCategory.innerHTML =
+                '<option value="all">Все категории</option>';
+
+            usedCategories.forEach(function (category) {
+                const option = document.createElement("option");
+
+                option.value = category;
+                option.textContent = category;
+
+                filterCategory.appendChild(option);
+            });
+
+            /*
+                Сохраняем выбранное значение фильтра,
+                если категория всё ещё существует.
+            */
+            if (
+                currentValue === "all" ||
+                usedCategories.includes(currentValue)
+            ) {
+                filterCategory.value = currentValue;
+            }
+        }
+
+
+        /* =========================================================
+           13. ОБЩАЯ ОТРИСОВКА ПРИЛОЖЕНИЯ
+           ========================================================= */
+
+        function renderApplication() {
+            const filteredTransactions =
+                getFilteredTransactions();
+
+            renderSummary(filteredTransactions);
+            renderTransactionsTable(filteredTransactions);
+            renderExpenseChart(filteredTransactions);
+            renderSavingRate(filteredTransactions);
+        }
+
+
+        /* =========================================================
+           14. ФИЛЬТРАЦИЯ ОПЕРАЦИЙ
+           ========================================================= */
+
+        function getFilteredTransactions() {
+            const searchValue =
+                searchInput.value.trim().toLowerCase();
+
+            const selectedType =
+                filterType.value;
+
+            const selectedCategory =
+                filterCategory.value;
+
+            const selectedMonth =
+                filterMonth.value;
+
+            return transactions
+                .filter(function (transaction) {
+                    const matchesSearch =
+                        !searchValue ||
+                        transaction.description
+                            .toLowerCase()
+                            .includes(searchValue) ||
+                        transaction.category
+                            .toLowerCase()
+                            .includes(searchValue);
+
+                    const matchesType =
+                        selectedType === "all" ||
+                        transaction.type === selectedType;
+
+                    const matchesCategory =
+                        selectedCategory === "all" ||
+                        transaction.category === selectedCategory;
+
+                    const matchesMonth =
+                        !selectedMonth ||
+                        transaction.date.startsWith(selectedMonth);
+
+                    return (
+                        matchesSearch &&
+                        matchesType &&
+                        matchesCategory &&
+                        matchesMonth
+                    );
+                })
+                .sort(function (a, b) {
+                    /*
+                        Сначала сортируем по дате,
+                        затем по времени создания.
+                    */
+                    const dateDifference =
+                        new Date(b.date) - new Date(a.date);
+
+                    if (dateDifference !== 0) {
+                        return dateDifference;
+                    }
+
+                    return (b.createdAt || 0) - (a.createdAt || 0);
+                });
+        }
+
+
+        /* =========================================================
+           15. РАСЧЁТ ИТОГОВ
+           ========================================================= */
+
+        function calculateTotals(transactionList) {
+            return transactionList.reduce(
+                function (totals, transaction) {
+                    if (transaction.type === "income") {
+                        totals.income += transaction.amount;
+                    } else {
+                        totals.expense += transaction.amount;
+                    }
+
+                    totals.balance =
+                        totals.income - totals.expense;
+
+                    return totals;
+                },
+                {
+                    income: 0,
+                    expense: 0,
+                    balance: 0
+                }
+            );
+        }
+
+        function renderSummary(transactionList) {
+            const totals = calculateTotals(transactionList);
+
+            totalIncomeElement.textContent =
+                formatMoney(totals.income);
+
+            totalExpenseElement.textContent =
+                formatMoney(totals.expense);
+
+            totalBalanceElement.textContent =
+                formatMoney(totals.balance);
+
+            if (totals.balance > 0) {
+                totalBalanceElement.style.color = "var(--income)";
+                balanceHintElement.textContent =
+                    "Бюджет находится в плюсе";
+            } else if (totals.balance < 0) {
+                totalBalanceElement.style.color = "var(--expense)";
+                balanceHintElement.textContent =
+                    "Расходы превышают доходы";
+            } else {
+                totalBalanceElement.style.color = "var(--balance)";
+                balanceHintElement.textContent =
+                    "Доходы равны расходам";
+            }
+        }
+
+
+        /* =========================================================
+           16. ТАБЛИЦА ОПЕРАЦИЙ
+           ========================================================= */
+
+        function renderTransactionsTable(transactionList) {
+            transactionTableBody.innerHTML = "";
+
+            if (transactionList.length === 0) {
+                transactionTableBody.innerHTML = `
+                    <tr>
+                        <td colspan="6" class="empty-state">
+                            Операции не найдены.
+                            Добавьте первую запись или измените фильтры.
+                        </td>
+                    </tr>
+                `;
+
+                return;
+            }
+
+            transactionList.forEach(function (transaction) {
+                const row = document.createElement("tr");
+
+                const typeText =
+                    transaction.type === "income"
+                        ? "Доход"
+                        : "Расход";
+
+                const amountSign =
+                    transaction.type === "income"
+                        ? "+"
+                        : "−";
+
+                row.innerHTML = `
+                    <td>
+                        ${escapeHTML(formatDate(transaction.date))}
+                    </td>
+
+                    <td>
+                        <span class="
+                            transaction-type
+                            transaction-type--${transaction.type}
+                        ">
+                            ${typeText}
+                        </span>
+                    </td>
+
+                    <td>
+                        ${escapeHTML(transaction.category)}
+                    </td>
+
+                    <td>
+                        ${escapeHTML(transaction.description)}
+                    </td>
+
+                    <td>
+                        <span class="
+                            amount
+                            amount--${transaction.type}
+                        ">
+                            ${amountSign}${escapeHTML(
+                                formatMoney(transaction.amount)
+                            )}
+                        </span>
+                    </td>
+
+                    <td>
+                        <div class="actions">
+                            <button
+                                class="icon-button edit-button"
+                                type="button"
+                                title="Редактировать"
+                                aria-label="Редактировать операцию"
+                            >
+                                ✎
+                            </button>
+
+                            <button
+                                class="
+                                    icon-button
+                                    icon-button--delete
+                                    delete-button
+                                "
+                                type="button"
+                                title="Удалить"
+                                aria-label="Удалить операцию"
+                            >
+                                ×
+                            </button>
+                        </div>
+                    </td>
+                `;
+
+                /*
+                    Назначаем события кнопкам после создания строки.
+                */
+                row
+                    .querySelector(".edit-button")
+                    .addEventListener(
+                        "click",
+                        function () {
+                            startEditingTransaction(
+                                transaction.id
+                            );
+                        }
+                    );
+
+                row
+                    .querySelector(".delete-button")
+                    .addEventListener(
+                        "click",
+                        function () {
+                            deleteTransaction(
+                                transaction.id
+                            );
+                        }
+                    );
+
+                transactionTableBody.appendChild(row);
+            });
+        }
+
+
+        /* =========================================================
+           17. ДИАГРАММА РАСХОДОВ
+           ========================================================= */
+
+        function renderExpenseChart(transactionList) {
+            /*
+                Сначала получаем только расходы.
+            */
+            const expenses = transactionList.filter(
+                function (transaction) {
+                    return transaction.type === "expense";
+                }
+            );
+
+            /*
+                Группируем расходы по категориям.
+            */
+            const groupedExpenses = expenses.reduce(
+                function (result, transaction) {
+                    if (!result[transaction.category]) {
+                        result[transaction.category] = 0;
+                    }
+
+                    result[transaction.category] +=
+                        transaction.amount;
+
+                    return result;
+                },
+                {}
+            );
+
+            const chartData = Object.entries(groupedExpenses)
+                .map(function ([category, amount]) {
+                    return {
+                        category,
+                        amount
+                    };
+                })
+                .sort(function (a, b) {
+                    return b.amount - a.amount;
+                });
+
+            const totalExpense = chartData.reduce(
+                function (sum, item) {
+                    return sum + item.amount;
+                },
+                0
+            );
+
+            chartTotal.textContent = formatMoney(totalExpense);
+            chartLegend.innerHTML = "";
+
+            const context = chartCanvas.getContext("2d");
+
+            /*
+                Очищаем предыдущую диаграмму.
+            */
+            context.clearRect(
+                0,
+                0,
+                chartCanvas.width,
+                chartCanvas.height
+            );
+
+            if (chartData.length === 0 || totalExpense <= 0) {
+                drawEmptyChart(context);
+
+                chartLegend.innerHTML = `
+                    <div class="chart-empty">
+                        Пока нет расходов для построения диаграммы.
+                    </div>
+                `;
+
+                return;
+            }
+
+            /*
+                Canvas имеет фактический размер 440 × 440,
+                но отображается как 220 × 220.
+                Благодаря этому диаграмма остаётся чёткой.
+            */
+            const centerX = chartCanvas.width / 2;
+            const centerY = chartCanvas.height / 2;
+            const radius = 190;
+            const lineWidth = 82;
+
+            let startAngle = -Math.PI / 2;
+
+            chartData.forEach(function (item, index) {
+                const sliceAngle =
+                    (item.amount / totalExpense) *
+                    Math.PI *
+                    2;
+
+                const color =
+                    chartColors[index % chartColors.length];
+
+                context.beginPath();
+                context.arc(
+                    centerX,
+                    centerY,
+                    radius - lineWidth / 2,
+                    startAngle,
+                    startAngle + sliceAngle
+                );
+
+                context.strokeStyle = color;
+                context.lineWidth = lineWidth;
+                context.lineCap = "butt";
+                context.stroke();
+
+                startAngle += sliceAngle;
+
+                createLegendItem(
+                    item,
+                    color,
+                    totalExpense
+                );
+            });
+        }
+
+        function drawEmptyChart(context) {
+            const centerX = chartCanvas.width / 2;
+            const centerY = chartCanvas.height / 2;
+
+            context.beginPath();
+            context.arc(
+                centerX,
+                centerY,
+                149,
+                0,
+                Math.PI * 2
+            );
+
+            context.strokeStyle = "#e5e7eb";
+            context.lineWidth = 82;
+            context.stroke();
+        }
+
+        function createLegendItem(item, color, totalExpense) {
+            const percentage =
+                totalExpense > 0
+                    ? (item.amount / totalExpense) * 100
+                    : 0;
+
+            const legendItem =
+                document.createElement("div");
+
+            legendItem.className = "legend__item";
+
+            legendItem.innerHTML = `
+                <span
+                    class="legend__color"
+                    style="background: ${color}"
+                ></span>
+
+                <span
+                    class="legend__name"
+                    title="${escapeHTML(item.category)}"
+                >
+                    ${escapeHTML(item.category)}
+                </span>
+
+                <span class="legend__value">
+                    ${percentage.toFixed(1)}%
+                </span>
+            `;
+
+            chartLegend.appendChild(legendItem);
+        }
+
+
+        /* =========================================================
+           18. НОРМА СБЕРЕЖЕНИЙ
+           ========================================================= */
+
+        function renderSavingRate(transactionList) {
+            const totals = calculateTotals(transactionList);
+
+            let savingRate = 0;
+
+            if (totals.income > 0) {
+                savingRate =
+                    (totals.balance / totals.income) * 100;
+            }
+
+            /*
+                Для полосы ограничиваем значение диапазоном 0–100.
+                Сам текстовый процент может быть отрицательным.
+            */
+            const progressValue = Math.min(
+                100,
+                Math.max(0, savingRate)
+            );
+
+            savingRateElement.textContent =
+                savingRate.toFixed(1) + "%";
+
+            savingProgress.style.width =
+                progressValue + "%";
+
+            savingProgress
+                .parentElement
+                .setAttribute(
+                    "aria-valuenow",
+                    String(progressValue)
+                );
+
+            if (totals.income === 0) {
+                savingMessage.textContent =
+                    "Добавьте доходы, чтобы рассчитать норму сбережений.";
+            } else if (savingRate < 0) {
+                savingMessage.textContent =
+                    "Расходы превышают доходы. Стоит пересмотреть крупные траты.";
+            } else if (savingRate < 10) {
+                savingMessage.textContent =
+                    "Сбережения небольшие. Попробуйте откладывать хотя бы 10% дохода.";
+            } else if (savingRate < 20) {
+                savingMessage.textContent =
+                    "Хорошее начало. Вы сохраняете заметную часть дохода.";
+            } else if (savingRate <= 50) {
+                savingMessage.textContent =
+                    "Отличный результат: семейный бюджет имеет хороший запас.";
+            } else {
+                savingMessage.textContent =
+                    "Очень высокий уровень сбережений. Проверьте, все ли расходы внесены.";
+            }
+        }
+
+
+        /* =========================================================
+           19. ДЕМОНСТРАЦИОННЫЕ ДАННЫЕ
+           ========================================================= */
+
+        function addDemoTransactions() {
+            const confirmed =
+                transactions.length === 0 ||
+                window.confirm(
+                    "Добавить демонстрационные операции к текущим данным?"
+                );
+
+            if (!confirmed) {
+                return;
+            }
+
+            const today = new Date();
+
+            const demoTransactions = [
+                {
+                    id: createUniqueId(),
+                    type: "income",
+                    category: "Зарплата",
+                    description: "Основная зарплата",
+                    amount: 75000,
+                    date: createDateForCurrentMonth(5),
+                    createdAt: Date.now()
+                },
+                {
+                    id: createUniqueId(),
+                    type: "income",
+                    category: "Подработка",
+                    description: "Дополнительный проект",
+                    amount: 18000,
+                    date: createDateForCurrentMonth(12),
+                    createdAt: Date.now() + 1
+                },
+                {
+                    id: createUniqueId(),
+                    type: "expense",
+                    category: "Продукты",
+                    description: "Продукты на неделю",
+                    amount: 8400,
+                    date: createDateForCurrentMonth(7),
+                    createdAt: Date.now() + 2
+                },
+                {
+                    id: createUniqueId(),
+                    type: "expense",
+                    category: "Коммунальные услуги",
+                    description: "Квартплата",
+                    amount: 6900,
+                    date: createDateForCurrentMonth(9),
+                    createdAt: Date.now() + 3
+                },
+                {
+                    id: createUniqueId(),
+                    type: "expense",
+                    category: "Транспорт",
+                    description: "Проезд и такси",
+                    amount: 4200,
+                    date: createDateForCurrentMonth(14),
+                    createdAt: Date.now() + 4
+                },
+                {
+                    id: createUniqueId(),
+                    type: "expense",
+                    category: "Здоровье",
+                    description: "Аптека",
+                    amount: 2300,
+                    date: createDateForCurrentMonth(
+                        Math.min(today.getDate(), 18)
+                    ),
+                    createdAt: Date.now() + 5
+                }
+            ];
+
+            transactions.push(...demoTransactions);
+
+            saveTransactions();
+            fillCategoryFilter();
+            renderApplication();
+
+            showNotification(
+                "Демонстрационные операции добавлены."
+            );
+        }
+
+        function createDateForCurrentMonth(day) {
+            const currentDate = new Date();
+
+            const year = currentDate.getFullYear();
+            const month = currentDate.getMonth();
+
+            const lastDay = new Date(
+                year,
+                month + 1,
+                0
+            ).getDate();
+
+            const safeDay = Math.min(day, lastDay);
+
+            return (
+                year +
+                "-" +
+                String(month + 1).padStart(2, "0") +
+                "-" +
+                String(safeDay).padStart(2, "0")
+            );
+        }
+
+
+        /* =========================================================
+           20. ОЧИСТКА ВСЕХ ДАННЫХ
+           ========================================================= */
+
+        function clearAllTransactions() {
+            if (transactions.length === 0) {
+                showNotification(
+                    "Список операций уже пуст."
+                );
+                return;
+            }
+
+            const confirmed = window.confirm(
+                "Удалить все операции? Это действие нельзя отменить."
+            );
+
+            if (!confirmed) {
+                return;
+            }
+
+            transactions = [];
+
+            saveTransactions();
+            resetForm();
+            fillCategoryFilter();
+            renderApplication();
+
+            showNotification("Все операции удалены.");
+        }
+
+
+        /* =========================================================
+           21. ЭКСПОРТ В CSV
+           ========================================================= */
+
+        function exportToCSV() {
+            const filteredTransactions =
+                getFilteredTransactions();
+
+            if (filteredTransactions.length === 0) {
+                showNotification(
+                    "Нет операций для экспорта.",
+                    true
+                );
+                return;
+            }
+
+            const csvRows = [
+                [
+                    "Дата",
+                    "Тип",
+                    "Категория",
+                    "Описание",
+                    "Сумма",
+                    "Валюта"
+                ]
+            ];
+
+            filteredTransactions.forEach(
+                function (transaction) {
+                    csvRows.push([
+                        transaction.date,
+                        transaction.type === "income"
+                            ? "Доход"
+                            : "Расход",
+                        transaction.category,
+                        transaction.description,
+                        transaction.amount
+                            .toFixed(2)
+                            .replace(".", ","),
+                        currencyInput.value
+                    ]);
+                }
+            );
+
+            /*
+                Экранируем значения:
+                - помещаем каждое значение в кавычки;
+                - двойные кавычки внутри значения удваиваем.
+            */
+            const csvContent = csvRows
+                .map(function (row) {
+                    return row
+                        .map(function (value) {
+                            return (
+                                '"' +
+                                String(value).replace(
+                                    /"/g,
+                                    '""'
+                                ) +
+                                '"'
+                            );
+                        })
+                        .join(";");
+                })
+                .join("\n");
+
+            /*
+                BOM нужен, чтобы Excel правильно распознавал
+                русские буквы в UTF-8.
+            */
+            const blob = new Blob(
+                ["\uFEFF" + csvContent],
+                {
+                    type: "text/csv;charset=utf-8;"
+                }
+            );
+
+            const downloadUrl =
+                URL.createObjectURL(blob);
+
+            const link =
+                document.createElement("a");
+
+            link.href = downloadUrl;
+            link.download =
+                "family-budget-" +
+                getTodayDate() +
+                ".csv";
+
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+
+            URL.revokeObjectURL(downloadUrl);
+
+            showNotification(
+                "CSV-файл подготовлен."
+            );
+        }
+
+
+        /* =========================================================
+           22. СОХРАНЕНИЕ В LOCALSTORAGE
+           ========================================================= */
+
+        function saveTransactions() {
+            try {
+                localStorage.setItem(
+                    STORAGE_KEY,
+                    JSON.stringify(transactions)
+                );
+            } catch (error) {
+                console.error(
+                    "Не удалось сохранить данные:",
+                    error
+                );
+
+                showNotification(
+                    "Браузер не смог сохранить данные.",
+                    true
+                );
+            }
+        }
+
+        function loadTransactions() {
+            try {
+                const savedData =
+                    localStorage.getItem(STORAGE_KEY);
+
+                if (!savedData) {
+                    return [];
+                }
+
+                const parsedData =
+                    JSON.parse(savedData);
+
+                if (!Array.isArray(parsedData)) {
+                    return [];
+                }
+
+                /*
+                    Проверяем и нормализуем сохранённые операции.
+                */
+                return parsedData
+                    .filter(function (transaction) {
+                        return (
+                            transaction &&
+                            typeof transaction.id === "string" &&
+                            (
+                                transaction.type === "income" ||
+                                transaction.type === "expense"
+                            ) &&
+                            Number.isFinite(
+                                Number(transaction.amount)
+                            )
+                        );
+                    })
+                    .map(function (transaction) {
+                        return {
+                            ...transaction,
+                            amount:
+                                Number(transaction.amount),
+                            createdAt:
+                                transaction.createdAt ||
+                                Date.now()
+                        };
+                    });
+            } catch (error) {
+                console.error(
+                    "Не удалось загрузить данные:",
+                    error
+                );
+
+                return [];
+            }
+        }
+
+
+        /* =========================================================
+           23. ФОРМАТИРОВАНИЕ ДЕНЕГ
+           ========================================================= */
+
+        function formatMoney(amount) {
+            const currency =
+                currencyInput.value || "RUB";
+
+            const localeMap = {
+                RUB: "ru-RU",
+                EUR: "de-DE",
+                USD: "en-US",
+                KZT: "ru-KZ",
+                BYN: "ru-BY"
+            };
+
+            try {
+                return new Intl.NumberFormat(
+                    localeMap[currency] || "ru-RU",
+                    {
+                        style: "currency",
+                        currency: currency,
+                        minimumFractionDigits:
+                            Number.isInteger(amount) ? 0 : 2,
+                        maximumFractionDigits: 2
+                    }
+                ).format(amount);
+            } catch (error) {
+                return amount.toFixed(2) + " " + currency;
+            }
+        }
+
+
+        /* =========================================================
+           24. ФОРМАТИРОВАНИЕ ДАТЫ
+           ========================================================= */
+
+        function formatDate(dateString) {
+            if (!dateString) {
+                return "—";
+            }
+
+            /*
+                Добавляем время 00:00, чтобы избежать смещения даты
+                из-за часового пояса браузера.
+            */
+            const date = new Date(
+                dateString + "T00:00:00"
+            );
+
+            if (Number.isNaN(date.getTime())) {
+                return dateString;
+            }
+
+            return new Intl.DateTimeFormat(
+                "ru-RU",
+                {
+                    day: "2-digit",
+                    month: "2-digit",
+                    year: "numeric"
+                }
+            ).format(date);
+        }
+
+        function getTodayDate() {
+            const today = new Date();
+
+            const year = today.getFullYear();
+            const month = String(
+                today.getMonth() + 1
+            ).padStart(2, "0");
+
+            const day = String(
+                today.getDate()
+            ).padStart(2, "0");
+
+            return year + "-" + month + "-" + day;
+        }
+
+
+        /* =========================================================
+           25. ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ
+           ========================================================= */
+
+        function createUniqueId() {
+            /*
+                randomUUID поддерживается большинством
+                современных браузеров.
+            */
+            if (
+                window.crypto &&
+                typeof window.crypto.randomUUID === "function"
+            ) {
+                return window.crypto.randomUUID();
+            }
+
+            /*
+                Запасной вариант для старых браузеров.
+            */
+            return (
+                Date.now().toString(36) +
+                Math.random().toString(36).slice(2)
+            );
+        }
+
+        function roundMoney(value) {
+            /*
+                Устраняет типичные ошибки JavaScript
+                при работе с дробными числами.
+            */
+            return Math.round(
+                (value + Number.EPSILON) * 100
+            ) / 100;
+        }
+
+        function escapeHTML(value) {
+            /*
+                Защита от вставки HTML и JavaScript
+                через описание или название категории.
+            */
+            return String(value)
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+
+
+        /* =========================================================
+           26. ВСПЛЫВАЮЩИЕ УВЕДОМЛЕНИЯ
+           ========================================================= */
+
+        let notificationTimer = null;
+
+        function showNotification(message, isError = false) {
+            clearTimeout(notificationTimer);
+
+            notification.textContent = message;
+
+            notification.classList.toggle(
+                "notification--error",
+                isError
+            );
+
+            notification.classList.add(
+                "notification--visible"
+            );
+
+            notificationTimer = setTimeout(
+                function () {
+                    notification.classList.remove(
+                        "notification--visible"
+                    );
+                },
+                2600
+            );
+        }
+    </script>
+</body>
+</html>
