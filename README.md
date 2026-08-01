@@ -20,14 +20,11 @@
 ```
 ├── index.html          # Лендинг
 ├── app.html            # Калькулятор бюджета
-├── css/
-│   ├── landing.css
-│   └── app.css
-├── js/
-│   └── app.js
-├── assets/
-│   ├── favicon.svg
-│   └── hero-props.png
+├── landing.css         # Стили лендинга
+├── app.css             # Стили приложения
+├── app.js              # Логика калькулятора
+├── favicon.svg
+├── hero-props.png      # Изображение в hero
 ├── package.json
 ├── LICENSE
 └── README.md
