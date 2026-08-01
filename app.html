@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Калькулятор семейного бюджета: доходы, расходы, диаграмма, фильтры и экспорт в CSV.">
+    <title>Калькулятор — Семейный бюджет</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Onest:wght@400;500;600;700;800&family=Unbounded:wght@500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/app.css">
+    <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+    <script>
+        (function () {
+            var key = "familyBudgetTheme";
+            var legacy = localStorage.getItem("familyBudgetLandingTheme");
+            var saved = localStorage.getItem(key) || legacy;
+            var theme = saved === "light" || saved === "dark"
+                ? saved
+                : (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+            document.documentElement.setAttribute("data-theme", theme);
+        })();
+    </script>
+</head>
+<body>
+<nav class="site-nav" aria-label="Основная навигация">
+        <div class="site-nav__inner">
+            <a class="site-nav__brand" href="index.html">
+                <span class="site-nav__mark" aria-hidden="true"></span>
+                Семейный бюджет
+            </a>
+            <div class="site-nav__links">
+                <a class="site-nav__link" href="index.html">Главная</a>
+                <a class="site-nav__link site-nav__link--active" href="app.html" aria-current="page">Калькулятор</a>
+                <button
+                    id="themeToggle"
+                    class="theme-toggle"
+                    type="button"
+                    aria-label="Переключить тему"
+                    title="Переключить тему"
+                >
+                    <span class="theme-toggle__icon theme-toggle__icon--sun" aria-hidden="true">☀</span>
+                    <span class="theme-toggle__icon theme-toggle__icon--moon" aria-hidden="true">☾</span>
+                    <span class="theme-toggle__text">Тема</span>
+                </button>
+            </div>
+        </div>
+    </nav>
+<main class="container">
+
+        <!-- =======================================================
+             ШАПКА ПРИЛОЖЕНИЯ
+             ======================================================= -->
+        <header class="header">
+            <div>
+                <h1 class="header__title">Семейный бюджет</h1>
+
+                <p class="header__subtitle">
+                    Добавляйте доходы и расходы, анализируйте категории
+                    и контролируйте семейные финансы.
+                </p>
+            </div>
+
+            <div class="header__settings">
+                <label for="currency">Валюта:</label>
+
+                <select id="currency" class="form-control">
+                    <option value="RUB">₽ Рубли</option>
+                    <option value="EUR">€ Евро</option>
+                    <option value="USD">$ Доллары</option>
+                    <option value="KZT">₸ Тенге</option>
+                    <option value="BYN">Br Белорусские рубли</option>
+                </select>
+            </div>
+        </header>
+
+        <!-- =======================================================
+             ИТОГОВЫЕ ПОКАЗАТЕЛИ
+             ======================================================= -->
+        <section class="summary-grid">
+            <article class="summary-card summary-card--income">
+                <span class="summary-card__label">Общий доход</span>
+
+                <strong
+                    id="totalIncome"
+                    class="summary-card__value"
+                >
+                    0 ₽
+                </strong>
+
+                <span class="summary-card__hint">
+                    Все поступления за выбранный период
+                </span>
+            </article>
+
+            <article class="summary-card summary-card--expense">
+                <span class="summary-card__label">Общие расходы</span>
+
+                <strong
+                    id="totalExpense"
+                    class="summary-card__value"
+                >
+                    0 ₽
+                </strong>
+
+                <span class="summary-card__hint">
+                    Все траты за выбранный период
+                </span>
+            </article>
+
+            <article class="summary-card summary-card--balance">
+                <span class="summary-card__label">Текущий баланс</span>
+
+                <strong
+                    id="totalBalance"
+                    class="summary-card__value"
+                >
+                    0 ₽
+                </strong>
+
+                <span
+                    id="balanceHint"
+                    class="summary-card__hint"
+                >
+                    Доходы минус расходы
+                </span>
+            </article>
+        </section>
+
+        <!-- =======================================================
+             ОСНОВНАЯ ЧАСТЬ
+             ======================================================= -->
+        <section class="main-grid">
+
+            <!-- Форма добавления операции -->
+            <article class="card">
+                <div class="card__header">
+                    <div>
+                        <h2 id="formTitle" class="card__title">
+                            Добавить операцию
+                        </h2>
+
+                        <p class="card__description">
+                            Заполните информацию о доходе или расходе.
+                        </p>
+                    </div>
+                </div>
+
+                <form id="transactionForm">
+                    <div class="form-grid">
+
+                        <div class="form-group">
+                            <label class="form-label" for="type">
+                                Тип операции
+                            </label>
+
+                            <select id="type" class="form-control" required>
+                                <option value="expense">Расход</option>
+                                <option value="income">Доход</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label" for="amount">
+                                Сумма
+                            </label>
+
+                            <input
+                                id="amount"
+                                class="form-control"
+                                type="number"
+                                min="0.01"
+                                step="0.01"
+                                placeholder="Например: 5000"
+                                required
+                            >
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label" for="category">
+                                Категория
+                            </label>
+
+                            <select
+                                id="category"
+                                class="form-control"
+                                required
+                            ></select>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label" for="date">
+                                Дата
+                            </label>
+
+                            <input
+                                id="date"
+                                class="form-control"
+                                type="date"
+                                required
+                            >
+                        </div>
+
+                        <div class="form-group form-group--full">
+                            <label class="form-label" for="description">
+                                Описание
+                            </label>
+
+                            <input
+                                id="description"
+                                class="form-control"
+                                type="text"
+                                maxlength="80"
+                                placeholder="Например: продукты на неделю"
+                            >
+                        </div>
+                    </div>
+
+                    <div class="form-actions">
+                        <button
+                            id="submitButton"
+                            class="button button--primary"
+                            type="submit"
+                        >
+                            Добавить операцию
+                        </button>
+
+                        <button
+                            id="cancelEditButton"
+                            class="button button--ghost"
+                            type="button"
+                            hidden
+                        >
+                            Отменить редактирование
+                        </button>
+
+                        <button
+                            id="addDemoButton"
+                            class="button button--secondary"
+                            type="button"
+                        >
+                            Добавить пример
+                        </button>
+                    </div>
+                </form>
+            </article>
+
+            <!-- Диаграмма расходов -->
+            <article class="card">
+                <div class="card__header">
+                    <div>
+                        <h2 class="card__title">Структура расходов</h2>
+
+                        <p class="card__description">
+                            Распределение расходов по категориям.
+                        </p>
+                    </div>
+                </div>
+
+                <div id="chartContainer" class="chart-container">
+                    <div class="chart-wrapper">
+                        <canvas
+                            id="budgetChart"
+                            width="440"
+                            height="440"
+                            aria-label="Диаграмма расходов"
+                        ></canvas>
+
+                        <div class="chart-center">
+                            <span class="chart-center__label">
+                                Расходы
+                            </span>
+
+                            <strong
+                                id="chartTotal"
+                                class="chart-center__value"
+                            >
+                                0 ₽
+                            </strong>
+                        </div>
+                    </div>
+
+                    <div id="chartLegend" class="legend"></div>
+                </div>
+            </article>
+        </section>
+
+        <!-- =======================================================
+             ПОКАЗАТЕЛЬ СБЕРЕЖЕНИЙ
+             ======================================================= -->
+        <section class="card progress-section">
+            <div class="card__header">
+                <div>
+                    <h2 class="card__title">Норма сбережений</h2>
+
+                    <p class="card__description">
+                        Какая часть доходов осталась после всех расходов.
+                    </p>
+                </div>
+            </div>
+
+            <div class="progress-info">
+                <span>Сохранено от дохода</span>
+                <strong id="savingRate">0%</strong>
+            </div>
+
+            <div
+                class="progress"
+                role="progressbar"
+                aria-valuemin="0"
+                aria-valuemax="100"
+            >
+                <div id="savingProgress" class="progress__bar"></div>
+            </div>
+
+            <p id="savingMessage" class="progress-message">
+                Добавьте доходы и расходы, чтобы увидеть норму сбережений.
+            </p>
+        </section>
+
+        <!-- =======================================================
+             СПИСОК ОПЕРАЦИЙ
+             ======================================================= -->
+        <section class="card">
+            <div class="card__header">
+                <div>
+                    <h2 class="card__title">История операций</h2>
+
+                    <p class="card__description">
+                        Используйте поиск и фильтры для анализа бюджета.
+                    </p>
+                </div>
+
+                <div class="form-actions">
+                    <button
+                        id="exportButton"
+                        class="button button--secondary"
+                        type="button"
+                    >
+                        Экспорт CSV
+                    </button>
+
+                    <button
+                        id="clearButton"
+                        class="button button--danger"
+                        type="button"
+                    >
+                        Очистить всё
+                    </button>
+                </div>
+            </div>
+
+            <!-- Панель фильтров -->
+            <div class="filters">
+                <input
+                    id="searchInput"
+                    class="form-control"
+                    type="search"
+                    placeholder="Поиск по описанию..."
+                >
+
+                <select id="filterType" class="form-control">
+                    <option value="all">Все операции</option>
+                    <option value="income">Только доходы</option>
+                    <option value="expense">Только расходы</option>
+                </select>
+
+                <select id="filterCategory" class="form-control">
+                    <option value="all">Все категории</option>
+                </select>
+
+                <input
+                    id="filterMonth"
+                    class="form-control"
+                    type="month"
+                    title="Фильтр по месяцу"
+                >
+            </div>
+
+            <div class="table-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Дата</th>
+                            <th>Тип</th>
+                            <th>Категория</th>
+                            <th>Описание</th>
+                            <th>Сумма</th>
+                            <th>Действия</th>
+                        </tr>
+                    </thead>
+
+                    <tbody id="transactionTableBody"></tbody>
+                </table>
+            </div>
+        </section>
+
+        <footer class="footer">
+            Данные автоматически сохраняются в памяти браузера.
+            Они остаются на этом устройстве после перезагрузки страницы.
+        </footer>
+    </main>
+
+    <!-- Всплывающее уведомление -->
+    <div
+        id="notification"
+        class="notification"
+        role="status"
+        aria-live="polite"
+    ></div>
+    <script src="js/app.js"></script>
+    <script>
+        (function () {
+            var storageKey = "familyBudgetTheme";
+            var root = document.documentElement;
+            var toggle = document.getElementById("themeToggle");
+
+            function getTheme() {
+                return root.getAttribute("data-theme") === "dark" ? "dark" : "light";
+            }
+
+            function setTheme(theme) {
+                root.setAttribute("data-theme", theme);
+                localStorage.setItem(storageKey, theme);
+                localStorage.setItem("familyBudgetLandingTheme", theme);
+                var isDark = theme === "dark";
+                toggle.setAttribute(
+                    "aria-label",
+                    isDark ? "Включить светлую тему" : "Включить тёмную тему"
+                );
+                toggle.setAttribute(
+                    "title",
+                    isDark ? "Светлая тема" : "Тёмная тема"
+                );
+            }
+
+            setTheme(getTheme());
+
+            toggle.addEventListener("click", function () {
+                setTheme(getTheme() === "dark" ? "light" : "dark");
+                window.dispatchEvent(new Event("themechange"));
+            });
+        })();
+    </script>
+</body>
+</html>

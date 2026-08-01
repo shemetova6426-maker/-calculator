@@ -1,0 +1,18 @@
+{
+  "name": "family-budget",
+  "version": "1.0.0",
+  "description": "Калькулятор семейного бюджета: лендинг и веб-приложение для учёта доходов и расходов",
+  "private": true,
+  "scripts": {
+    "start": "npx --yes serve . -p 3000",
+    "serve": "npm start"
+  },
+  "keywords": [
+    "budget",
+    "finance",
+    "family-budget",
+    "calculator",
+    "static-site"
+  ],
+  "license": "MIT"
+}
