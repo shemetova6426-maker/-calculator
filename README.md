@@ -18,7 +18,7 @@
 ## Структура проекта
 
 ```
-├── index.html          # Приветственный лендинг
+├── index.html          # Лендинг
 ├── app.html            # Калькулятор бюджета
 ├── css/
 │   ├── landing.css
@@ -27,8 +27,9 @@
 │   └── app.js
 ├── assets/
 │   ├── favicon.svg
-│   └── hero-ledger.svg
+│   └── hero-props.png
 ├── package.json
+├── LICENSE
 └── README.md
 ```
 
